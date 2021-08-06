@@ -12,16 +12,18 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
 import mozilla.components.browser.state.selector.normalTabs
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.browser.storage.sync.Tab as SyncTab
 import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.concept.tabstray.Tab
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import org.mozilla.fenix.BrowserDirection
+import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.collections.CollectionsDialog
 import org.mozilla.fenix.collections.show
 import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.bookmarks.BookmarksUseCase
 import org.mozilla.fenix.components.metrics.Event
 import org.mozilla.fenix.components.metrics.MetricController
-import org.mozilla.fenix.ext.navigateBlockingForAsyncNavGraph
 import org.mozilla.fenix.home.HomeFragment
 import org.mozilla.fenix.tabstray.ext.getTabSessionState
 import kotlin.coroutines.CoroutineContext
@@ -75,6 +77,11 @@ interface NavigationInteractor {
      * Used when adding [Tab]s as bookmarks.
      */
     fun onSaveToBookmarks(tabs: Collection<Tab>)
+
+    /**
+     * Called when clicking on a SyncedTab item.
+     */
+    fun onSyncedTabClicked(tab: SyncTab)
 }
 
 /**
@@ -83,6 +90,7 @@ interface NavigationInteractor {
 @Suppress("LongParameterList")
 class DefaultNavigationInteractor(
     private val context: Context,
+    private val activity: HomeActivity,
     private val browserStore: BrowserStore,
     private val navController: NavController,
     private val metrics: MetricController,
@@ -91,11 +99,18 @@ class DefaultNavigationInteractor(
     private val bookmarksUseCase: BookmarksUseCase,
     private val tabsTrayStore: TabsTrayStore,
     private val collectionStorage: TabCollectionStorage,
+    private val showCollectionSnackbar: (
+        tabSize: Int,
+        isNewCollection: Boolean,
+        collectionToSelect: Long?
+    ) -> Unit,
+    private val showBookmarkSnackbar: (tabSize: Int) -> Unit,
     private val accountManager: FxaAccountManager,
     private val ioDispatcher: CoroutineContext
 ) : NavigationInteractor {
 
     override fun onTabTrayDismissed() {
+        metrics.track(Event.TabsTrayClosed)
         dismissTabTray()
     }
 
@@ -107,17 +122,17 @@ class DefaultNavigationInteractor(
         } else {
             TabsTrayFragmentDirections.actionGlobalTurnOnSync()
         }
-        navController.navigateBlockingForAsyncNavGraph(direction)
+        navController.navigate(direction)
     }
 
     override fun onTabSettingsClicked() {
-        navController.navigateBlockingForAsyncNavGraph(
+        navController.navigate(
             TabsTrayFragmentDirections.actionGlobalTabSettingsFragment()
         )
     }
 
     override fun onOpenRecentlyClosedClicked() {
-        navController.navigateBlockingForAsyncNavGraph(
+        navController.navigate(
             TabsTrayFragmentDirections.actionGlobalRecentlyClosed()
         )
         metrics.track(Event.RecentlyClosedTabsOpened)
@@ -130,7 +145,7 @@ class DefaultNavigationInteractor(
         val directions = TabsTrayFragmentDirections.actionGlobalShareFragment(
             data = data.toTypedArray()
         )
-        navController.navigateBlockingForAsyncNavGraph(directions)
+        navController.navigate(directions)
     }
 
     override fun onShareTabsOfTypeClicked(private: Boolean) {
@@ -141,7 +156,7 @@ class DefaultNavigationInteractor(
         val directions = TabsTrayFragmentDirections.actionGlobalShareFragment(
             data = data.toTypedArray()
         )
-        navController.navigateBlockingForAsyncNavGraph(directions)
+        navController.navigate(directions)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -157,25 +172,26 @@ class DefaultNavigationInteractor(
 
     override fun onSaveToCollections(tabs: Collection<Tab>) {
         metrics.track(Event.TabsTraySaveToCollectionPressed)
+        tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
 
         CollectionsDialog(
             storage = collectionStorage,
-            onPositiveButtonClick = { existingCollection ->
-                tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
+            sessionList = browserStore.getTabSessionState(tabs),
+            onPositiveButtonClick = { id, isNewCollection ->
 
                 // If collection is null, a new one was created.
-                val event = if (existingCollection == null) {
+                val event = if (isNewCollection) {
                     Event.CollectionSaved(browserStore.state.normalTabs.size, tabs.size)
                 } else {
                     Event.CollectionTabsAdded(browserStore.state.normalTabs.size, tabs.size)
                 }
-                metrics.track(event)
+                id?.apply {
+                    showCollectionSnackbar(tabs.size, isNewCollection, id)
+                }
 
-                browserStore.getTabSessionState(tabs)
+                metrics.track(event)
             },
-            onNegativeButtonClick = {
-                tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
-            }
+            onNegativeButtonClick = {}
         ).show(context)
     }
 
@@ -189,8 +205,17 @@ class DefaultNavigationInteractor(
             }
         }
 
-        tabsTrayStore.dispatch(TabsTrayAction.ExitSelectMode)
+        showBookmarkSnackbar(tabs.size)
+    }
 
-        // TODO show successful snackbar here (regardless of operation succes).
+    override fun onSyncedTabClicked(tab: SyncTab) {
+        metrics.track(Event.SyncedTabOpened)
+
+        dismissTabTray()
+        activity.openToBrowserAndLoad(
+            searchTermOrURL = tab.active().url,
+            newTab = true,
+            from = BrowserDirection.FromTabsTray
+        )
     }
 }

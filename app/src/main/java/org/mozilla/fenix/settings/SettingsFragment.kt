@@ -26,7 +26,6 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.amo_collection_override_dialog.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -34,25 +33,25 @@ import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
-import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.view.showKeyboard
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.Config
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
-import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.components.metrics.Event
+import org.mozilla.fenix.databinding.AmoCollectionOverrideDialogBinding
 import org.mozilla.fenix.experiments.ExperimentBranch
-import org.mozilla.fenix.experiments.Experiments
+import org.mozilla.fenix.experiments.FeatureId
 import org.mozilla.fenix.ext.application
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
-import org.mozilla.fenix.ext.navigateBlockingForAsyncNavGraph
 import org.mozilla.fenix.ext.metrics
 import org.mozilla.fenix.ext.navigateToNotificationsSettings
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.settings
 import org.mozilla.fenix.ext.REQUEST_CODE_BROWSER_ROLE
+import org.mozilla.fenix.ext.getVariables
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.showToolbar
 import org.mozilla.fenix.ext.withExperiment
@@ -153,24 +152,22 @@ class SettingsFragment : PreferenceFragmentCompat() {
      */
     private fun getPreferenceLayoutId() =
         if (isDefaultBrowserExperimentBranch() && !isFirefoxDefaultBrowser()) {
-            if (FeatureFlags.newIconSet) {
-                R.xml.preferences_without_icons_default_browser_experiment
-            } else {
-                R.xml.preferences_default_browser_experiment
-            }
+            R.xml.preferences_default_browser_experiment
         } else {
-            if (FeatureFlags.newIconSet) {
-                R.xml.preferences_without_icons
-            } else {
-                R.xml.preferences
-            }
+            R.xml.preferences
         }
 
     @SuppressLint("RestrictedApi")
     override fun onResume() {
         super.onResume()
 
-        showToolbar(getString(R.string.settings_title))
+        // Use nimbus to set the title, and a trivial addition
+        val experiments = requireContext().components.analytics.experiments
+        val variables = experiments.getVariables(FeatureId.NIMBUS_VALIDATION)
+        val title = variables.getText("settings-title") ?: getString(R.string.settings_title)
+        val suffix = variables.getString("settings-title-punctuation") ?: ""
+
+        showToolbar("$title$suffix")
 
         // Account UI state is updated as part of `onCreate`. To not do it twice in a row, we only
         // update it here if we're not going through the `onCreate->onStart->onResume` lifecycle chain.
@@ -355,6 +352,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 val context = requireContext()
                 val dialogView = LayoutInflater.from(context).inflate(R.layout.amo_collection_override_dialog, null)
 
+                val binding = AmoCollectionOverrideDialogBinding.bind(dialogView)
                 AlertDialog.Builder(context).apply {
                     setTitle(context.getString(R.string.preferences_customize_amo_collection))
                     setView(dialogView)
@@ -363,8 +361,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     }
 
                     setPositiveButton(R.string.customize_addon_collection_ok) { _, _ ->
-                        context.settings().overrideAmoUser = dialogView.custom_amo_user.text.toString()
-                        context.settings().overrideAmoCollection = dialogView.custom_amo_collection.text.toString()
+                        context.settings().overrideAmoUser = binding.customAmoUser.text.toString()
+                        context.settings().overrideAmoCollection = binding.customAmoCollection.text.toString()
 
                         Toast.makeText(
                             context,
@@ -372,15 +370,18 @@ class SettingsFragment : PreferenceFragmentCompat() {
                             Toast.LENGTH_LONG
                         ).show()
 
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            exitProcess(0)
-                        }, AMO_COLLECTION_OVERRIDE_EXIT_DELAY)
+                        Handler(Looper.getMainLooper()).postDelayed(
+                            {
+                                exitProcess(0)
+                            },
+                            AMO_COLLECTION_OVERRIDE_EXIT_DELAY
+                        )
                     }
 
-                    dialogView.custom_amo_collection.setText(context.settings().overrideAmoCollection)
-                    dialogView.custom_amo_user.setText(context.settings().overrideAmoUser)
-                    dialogView.custom_amo_user.requestFocus()
-                    dialogView.custom_amo_user.showKeyboard()
+                    binding.customAmoCollection.setText(context.settings().overrideAmoCollection)
+                    binding.customAmoUser.setText(context.settings().overrideAmoUser)
+                    binding.customAmoUser.requestFocus()
+                    binding.customAmoUser.showKeyboard()
                     create()
                 }.show()
 
@@ -395,20 +396,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupPreferences() {
         val leakKey = getPreferenceKey(R.string.pref_key_leakcanary)
         val debuggingKey = getPreferenceKey(R.string.pref_key_remote_debugging)
-        val preferencePrivateBrowsing =
-            requirePreference<Preference>(R.string.pref_key_private_browsing)
         val preferenceLeakCanary = findPreference<Preference>(leakKey)
         val preferenceRemoteDebugging = findPreference<Preference>(debuggingKey)
         val preferenceMakeDefaultBrowser =
             requirePreference<Preference>(R.string.pref_key_make_default_browser)
         val preferenceOpenLinksInExternalApp =
             findPreference<Preference>(getPreferenceKey(R.string.pref_key_open_links_in_external_app))
-
-        if (!FeatureFlags.newIconSet) {
-            preferencePrivateBrowsing.icon.mutate().apply {
-                setTint(requireContext().getColorFromAttr(R.attr.primaryText))
-            }
-        }
 
         if (!Config.channel.isReleased) {
             preferenceLeakCanary?.setOnPreferenceChangeListener { _, newValue ->
@@ -445,9 +438,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         getString(R.string.toast_override_fxa_sync_server_done),
                         Toast.LENGTH_LONG
                     ).show()
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        exitProcess(0)
-                    }, FXA_SYNC_OVERRIDE_EXIT_DELAY)
+                    Handler(Looper.getMainLooper()).postDelayed(
+                        {
+                            exitProcess(0)
+                        },
+                        FXA_SYNC_OVERRIDE_EXIT_DELAY
+                    )
                 }
             }
         }
@@ -457,7 +453,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         with(requireContext().settings()) {
             findPreference<Preference>(
                 getPreferenceKey(R.string.pref_key_credit_cards)
-            )?.isVisible = creditCardsFeature
+            )?.isVisible = FeatureFlags.creditCardsFeature
             findPreference<Preference>(
                 getPreferenceKey(R.string.pref_key_nimbus_experiments)
             )?.isVisible = showSecretDebugMenuThisSession
@@ -488,6 +484,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    @Suppress("DEPRECATION")
+    // https://github.com/mozilla-mobile/fenix/issues/19919
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -506,7 +504,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun navigateFromSettings(directions: NavDirections) {
         view?.findNavController()?.let { navController ->
             if (navController.currentDestination?.id == R.id.settingsFragment) {
-                navController.navigateBlockingForAsyncNavGraph(directions)
+                navController.navigate(directions)
             }
         }
     }
@@ -546,8 +544,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
             findPreference<Preference>(getPreferenceKey(R.string.pref_key_override_sync_tokenserver))
         val settings = requireContext().settings()
         val show = settings.overrideFxAServer.isNotEmpty() ||
-                settings.overrideSyncTokenServer.isNotEmpty() ||
-                settings.showSecretDebugMenuThisSession
+            settings.overrideSyncTokenServer.isNotEmpty() ||
+            settings.showSecretDebugMenuThisSession
         // Only enable changes to these prefs when the user isn't connected to an account.
         val enabled =
             requireComponents.backgroundServices.accountManager.authenticatedAccount() == null
@@ -568,9 +566,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val preferenceAmoCollectionOverride =
             findPreference<Preference>(getPreferenceKey(R.string.pref_key_override_amo_collection))
 
-        val show = (Config.channel.isNightlyOrDebug && (
-            settings.amoCollectionOverrideConfigured() || settings.showSecretDebugMenuThisSession)
-        )
+        val show = (
+            Config.channel.isNightlyOrDebug && (
+                settings.amoCollectionOverrideConfigured() || settings.showSecretDebugMenuThisSession
+                )
+            )
         preferenceAmoCollectionOverride?.apply {
             isVisible = show
             summary = settings.overrideAmoCollection.ifEmpty { null }
@@ -597,16 +597,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         getString(R.string.toast_override_fxa_sync_server_done),
                         Toast.LENGTH_LONG
                     ).show()
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        exitProcess(0)
-                    }, FXA_SYNC_OVERRIDE_EXIT_DELAY)
+                    Handler(Looper.getMainLooper()).postDelayed(
+                        {
+                            exitProcess(0)
+                        },
+                        FXA_SYNC_OVERRIDE_EXIT_DELAY
+                    )
                 }
         }
     }
 
     private fun isDefaultBrowserExperimentBranch(): Boolean {
         val experiments = context?.components?.analytics?.experiments
-        return experiments?.withExperiment(Experiments.DEFAULT_BROWSER) { experimentBranch ->
+        return experiments?.withExperiment(FeatureId.DEFAULT_BROWSER) { experimentBranch ->
             (experimentBranch == ExperimentBranch.DEFAULT_BROWSER_SETTINGS_MENU)
         } == true
     }

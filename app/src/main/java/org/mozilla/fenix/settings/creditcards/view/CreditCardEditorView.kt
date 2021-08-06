@@ -4,19 +4,24 @@
 
 package org.mozilla.fenix.settings.creditcards.view
 
-import android.R
 import android.view.View
 import android.widget.ArrayAdapter
-import kotlinx.android.extensions.LayoutContainer
-import kotlinx.android.synthetic.main.fragment_credit_card_editor.*
+import androidx.annotation.VisibleForTesting
 import mozilla.components.concept.storage.CreditCardNumber
 import mozilla.components.concept.storage.NewCreditCardFields
 import mozilla.components.concept.storage.UpdatableCreditCardFields
+import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.view.hideKeyboard
+import mozilla.components.support.utils.creditCardIIN
+import org.mozilla.fenix.R
+import org.mozilla.fenix.databinding.FragmentCreditCardEditorBinding
 import org.mozilla.fenix.ext.toEditable
-import org.mozilla.fenix.settings.creditcards.CreditCardEditorFragment.Companion.CARD_TYPE_PLACEHOLDER
+import org.mozilla.fenix.settings.creditcards.CreditCardEditorFragment
 import org.mozilla.fenix.settings.creditcards.CreditCardEditorState
 import org.mozilla.fenix.settings.creditcards.interactor.CreditCardEditorInteractor
+import org.mozilla.fenix.settings.creditcards.last4Digits
+import org.mozilla.fenix.settings.creditcards.toCreditCardNumber
+import org.mozilla.fenix.settings.creditcards.validateCreditCardNumber
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -25,17 +30,16 @@ import java.util.Locale
  * Shows a credit card editor for adding or updating a credit card.
  */
 class CreditCardEditorView(
-    override val containerView: View,
+    private val binding: FragmentCreditCardEditorBinding,
     private val interactor: CreditCardEditorInteractor
-) : LayoutContainer {
+) {
 
     /**
      * Binds the given [CreditCardEditorState] in the [CreditCardEditorFragment].
      */
-    @Suppress("MagicNumber")
     fun bind(state: CreditCardEditorState) {
         if (state.isEditing) {
-            delete_button.apply {
+            binding.deleteButton.apply {
                 visibility = View.VISIBLE
 
                 setOnClickListener {
@@ -44,44 +48,89 @@ class CreditCardEditorView(
             }
         }
 
-        cancel_button.setOnClickListener {
+        binding.cancelButton.setOnClickListener {
             interactor.onCancelButtonClicked()
         }
 
-        save_button.setOnClickListener {
-            containerView.hideKeyboard()
+        binding.saveButton.setOnClickListener {
+            saveCreditCard(state)
+        }
 
-            // TODO same as in the corresponding fragment, plaintext number if it's being updated or
-            //  round-tripped otherwise. Also, why is there so much duplication?
-            val cardNumber = card_number_input.text.toString()
+        binding.cardNumberInput.text = state.cardNumber.toEditable()
+        binding.nameOnCardInput.text = state.billingName.toEditable()
+
+        bindExpiryMonthDropDown(state.expiryMonth)
+        bindExpiryYearDropDown(state.expiryYears)
+    }
+
+    /**
+     * Saves a new credit card or updates an existing one with data from the user input.
+     *
+     * @param state The state of the [CreditCardEditorFragment] containing the edited credit card
+     * information.
+     */
+    internal fun saveCreditCard(state: CreditCardEditorState) {
+        binding.root.hideKeyboard()
+
+        if (validateForm()) {
+            val cardNumber = binding.cardNumberInput.text.toString().toCreditCardNumber()
+
             if (state.isEditing) {
                 val fields = UpdatableCreditCardFields(
-                    billingName = name_on_card_input.text.toString(),
-                    cardNumber = CreditCardNumber.Encrypted(cardNumber),
-                    cardNumberLast4 = cardNumber.substring(cardNumber.length - 4),
-                    expiryMonth = (expiry_month_drop_down.selectedItemPosition + 1).toLong(),
-                    expiryYear = expiry_year_drop_down.selectedItem.toString().toLong(),
-                    cardType = CARD_TYPE_PLACEHOLDER
+                    billingName = binding.nameOnCardInput.text.toString(),
+                    cardNumber = CreditCardNumber.Plaintext(cardNumber),
+                    cardNumberLast4 = cardNumber.last4Digits(),
+                    expiryMonth = (binding.expiryMonthDropDown.selectedItemPosition + 1).toLong(),
+                    expiryYear = binding.expiryYearDropDown.selectedItem.toString().toLong(),
+                    cardType = cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: ""
                 )
                 interactor.onUpdateCreditCard(state.guid, fields)
             } else {
                 val fields = NewCreditCardFields(
-                    billingName = name_on_card_input.text.toString(),
+                    billingName = binding.nameOnCardInput.text.toString(),
                     plaintextCardNumber = CreditCardNumber.Plaintext(cardNumber),
-                    cardNumberLast4 = cardNumber.substring(cardNumber.length - 4),
-                    expiryMonth = (expiry_month_drop_down.selectedItemPosition + 1).toLong(),
-                    expiryYear = expiry_year_drop_down.selectedItem.toString().toLong(),
-                    cardType = CARD_TYPE_PLACEHOLDER
+                    cardNumberLast4 = cardNumber.last4Digits(),
+                    expiryMonth = (binding.expiryMonthDropDown.selectedItemPosition + 1).toLong(),
+                    expiryYear = binding.expiryYearDropDown.selectedItem.toString().toLong(),
+                    cardType = cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: ""
                 )
                 interactor.onSaveCreditCard(fields)
             }
         }
+    }
 
-        card_number_input.text = state.cardNumber.toEditable()
-        name_on_card_input.text = state.billingName.toEditable()
+    /**
+     * Validates the credit card information entered by the user.
+     *
+     * @return true if the credit card information is valid, false otherwise.
+     */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun validateForm(): Boolean {
+        var isValid = true
 
-        bindExpiryMonthDropDown(state.expiryMonth)
-        bindExpiryYearDropDown(state.expiryYears)
+        if (binding.cardNumberInput.text.toString().validateCreditCardNumber()) {
+            binding.cardNumberLayout.error = null
+            binding.cardNumberTitle.setTextColor(binding.root.context.getColorFromAttr(R.attr.primaryText))
+        } else {
+            isValid = false
+
+            binding.cardNumberLayout.error =
+                binding.root.context.getString(R.string.credit_cards_number_validation_error_message)
+            binding.cardNumberTitle.setTextColor(binding.root.context.getColorFromAttr(R.attr.destructive))
+        }
+
+        if (binding.nameOnCardInput.text.toString().isNotBlank()) {
+            binding.nameOnCardInput.error = null
+            binding.nameOnCardTitle.setTextColor(binding.root.context.getColorFromAttr(R.attr.primaryText))
+        } else {
+            isValid = false
+
+            binding.nameOnCardLayout.error =
+                binding.root.context.getString(R.string.credit_cards_name_on_card_validation_error_message)
+            binding.nameOnCardTitle.setTextColor(binding.root.context.getColorFromAttr(R.attr.destructive))
+        }
+
+        return isValid
     }
 
     /**
@@ -92,7 +141,10 @@ class CreditCardEditorView(
      */
     private fun bindExpiryMonthDropDown(expiryMonth: Int) {
         val adapter =
-            ArrayAdapter<String>(containerView.context, R.layout.simple_spinner_dropdown_item)
+            ArrayAdapter<String>(
+                binding.root.context,
+                android.R.layout.simple_spinner_dropdown_item
+            )
         val dateFormat = SimpleDateFormat("MMMM (MM)", Locale.getDefault())
 
         val calendar = Calendar.getInstance()
@@ -103,8 +155,8 @@ class CreditCardEditorView(
             adapter.add(dateFormat.format(calendar.time))
         }
 
-        expiry_month_drop_down.adapter = adapter
-        expiry_month_drop_down.setSelection(expiryMonth - 1)
+        binding.expiryMonthDropDown.adapter = adapter
+        binding.expiryMonthDropDown.setSelection(expiryMonth - 1)
     }
 
     /**
@@ -115,14 +167,17 @@ class CreditCardEditorView(
      */
     private fun bindExpiryYearDropDown(expiryYears: Pair<Int, Int>) {
         val adapter =
-            ArrayAdapter<String>(containerView.context, R.layout.simple_spinner_dropdown_item)
+            ArrayAdapter<String>(
+                binding.root.context,
+                android.R.layout.simple_spinner_dropdown_item
+            )
         val (startYear, endYear) = expiryYears
 
         for (year in startYear until endYear) {
             adapter.add(year.toString())
         }
 
-        expiry_year_drop_down.adapter = adapter
+        binding.expiryYearDropDown.adapter = adapter
     }
 
     companion object {

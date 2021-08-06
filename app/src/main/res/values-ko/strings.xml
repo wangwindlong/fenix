@@ -6,6 +6,7 @@
     <string name="app_name_private_5">사생활 보호 %s</string>
     <!-- App name for private browsing mode. The first parameter is the name of the app defined in app_name (for example: Fenix)-->
     <string name="app_name_private_4">%s (사생활 보호)</string>
+
     <!-- Home Fragment -->
     <!-- Content description (not visible, for screen readers etc.): "Three dot" menu button. -->
     <string name="content_description_menu">옵션 더보기</string>
@@ -52,6 +53,16 @@
     <string name="tab_tray_enter_multiselect_content_description">다중 선택 모드로 전환됨, 모음집에 저장할 탭을 선택하세요</string>
     <!-- Content description on checkmark while tab is selected in multiselect mode in tab tray -->
     <string name="tab_tray_multiselect_selected_content_description">선택됨</string>
+
+    <!-- Home - Recently saved bookmarks -->
+    <!-- Title for the home screen section with recently saved bookmarks. -->
+    <string name="recently_saved_bookmarks">최근 저장됨</string>
+    <!-- Content description for the recently saved bookmarks section on the home screen. -->
+    <string name="recently_saved_bookmarks_content_description">최근 저장된 북마크</string>
+    <!-- Title for the button which navigates the user to show all of their saved bookmarks. -->
+    <string name="recently_saved_show_all">모두 표시</string>
+    <!-- Content description for the button which navigates the user to show all of their saved bookmarks. -->
+    <string name="recently_saved_show_all_content_description">저장된 북마크 모두 표시 버튼</string>
 
     <!-- About content. The first parameter is the name of the application. (For example: Fenix) -->
     <string name="about_content">%1$s는 Mozilla에서 제작했습니다.</string>
@@ -100,13 +111,6 @@
     <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
     <string name="tab_tray_close_tabs_banner_negative_button_text">닫기</string>
 
-    <!-- Text for the banner message to tell users about our grid view feature. -->
-    <string name="tab_tray_grid_view_banner_message">열린 탭의 레이아웃을 변경하세요. 설정으로 이동하여 탭 보기에서 그리드를 선택하세요.</string>
-    <!-- Text for the positive action button to go to Settings for auto close tabs. -->
-    <string name="tab_tray_grid_view_banner_positive_button_text">설정으로 이동</string>
-    <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
-    <string name="tab_tray_grid_view_banner_negative_button_text">닫기</string>
-
     <!-- Home screen icons - Long press shortcuts -->
     <!-- Shortcut action to open new tab -->
     <string name="home_screen_shortcut_open_new_tab_2">새 탭</string>
@@ -115,6 +119,12 @@
 
     <!-- Heading for the Top Sites block -->
     <string name="home_screen_top_sites_heading">상위 사이트</string>
+
+    <!-- Recent Tabs -->
+    <!-- Header text for jumping back into the recent tab in the home screen -->
+    <string name="recent_tabs_header">최근 탭으로 이동</string>
+    <!-- Button text for showing all the tabs in the tabs tray -->
+    <string name="recent_tabs_show_all">모두 표시</string>
 
     <!-- Browser Fragment -->
     <!-- Content description (not visible, for screen readers etc.): Navigate to open tabs -->
@@ -192,6 +202,10 @@
     <string name="browser_menu_add">추가</string>
     <!-- Browser menu label for editing a bookmark -->
     <string name="browser_menu_edit">편집</string>
+
+    <!-- Browser Toolbar -->
+    <!-- Content description for the Home screen button on the browser toolbar -->
+    <string name="browser_toolbar_home">홈 화면</string>
 
     <!-- Error message to show when the user tries to access a scheme not
         handled by the app (Ex: blob, tel etc) -->
@@ -424,6 +438,11 @@
         and the third is the device model. -->
     <string name="default_device_name_2">%2$s %3$s의 %1$s</string>
 
+    <!-- Preference for syncing credit cards -->
+    <string name="preferences_sync_credit_cards">신용 카드</string>
+    <!-- Preference for syncing addresses -->
+    <string name="preferences_sync_address">주소</string>
+
     <!-- Send Tab -->
     <!-- Name of the "receive tabs" notification channel. Displayed in the "App notifications" system settings for the app -->
     <string name="fxa_received_tab_channel_name">받은 탭</string>
@@ -555,8 +574,6 @@
     <string name="library_new_tab">새 탭</string>
     <!-- Option in Library to find text in page -->
     <string name="library_find_in_page">페이지에서 찾기</string>
-    <!-- Option in Library to open Synced Tabs page -->
-    <string name="library_synced_tabs">동기화된 탭</string>
     <!-- Option in Library to open Reading List -->
     <string name="library_reading_list">읽기 목록</string>
     <!-- Menu Item Label for Search in Library -->
@@ -602,6 +619,15 @@
     <!-- Option for auto closing tabs that will auto close tabs after one month -->
     <string name="close_tabs_after_one_month">한 달 후</string>
 
+    <!-- Start on Home -->
+    <!-- Title of a preference that allows a user to indicate after a specified amount of time when the app should start on the home screen -->
+    <string name="preferences_start_on_home">홈에서 시작</string>
+    <!-- Option for starting on the home screen after after four hours or inactivity -->
+    <string name="start_on_home_after_four_hours">4시간 후</string>
+    <!-- Option for always starting on the home screen -->
+    <string name="start_on_home_always">항상</string>
+    <!-- Option for never starting on the home screen -->
+    <string name="start_on_home_never">안 함</string>
     <!-- Summary for tabs preference when auto closing tabs setting is set to manual close-->
     <string name="close_tabs_manually_summary">수동으로 닫기</string>
     <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one day-->
@@ -1057,6 +1083,16 @@
     <string name="notification_pbm_action_delete_and_open">삭제후 열기</string>
     <!-- Name of the "Powered by Fenix" notification channel. Displayed in the "App notifications" system settings for the app -->
     <string name="notification_powered_by_channel_name">제공:</string>
+    <!-- Name of the marketing notification channel. Displayed in the "App notifications" system settings for the app -->
+    <string name="notification_marketing_channel_name">마케팅</string>
+    <!-- Title shown in the notification that pops up to remind the user to set fenix as default browser.
+    %1$s is a placeholder that will be replaced by the app name (Fenix). -->
+    <string name="notification_default_browser_title">%1$s는 빠르고 사생활을 보호합니다.</string>
+    <!-- Text shown in the notification that pops up to remind the user to set fenix as default browser.
+    %1$s is a placeholder that will be replaced by the app name (Fenix). -->
+    <string name="notification_default_browser_text">%1$s를 기본 브라우저로 설정</string>
+
+    <!-- Snackbar -->
     <!-- Text shown in snackbar when user deletes a collection -->
     <string name="snackbar_collection_deleted">모음집 삭제됨</string>
 
@@ -1496,10 +1532,8 @@
     <string name="preferences_passwords_autofill">자동 채우기</string>
     <!-- Preference for syncing saved logins in Fenix -->
     <string name="preferences_passwords_sync_logins">Sync 로그인</string>
-    <!-- Syncing saved logins in Fenix is on -->
-    <string name="preferences_passwords_sync_logins_on">켜짐</string>
-    <!-- Syncing saved logins in Fenix is off -->
-    <string name="preferences_passwords_sync_logins_off">꺼짐</string>
+    <!-- Preference for syncing saved logins in Fenix, when not signed in-->
+    <string name="preferences_passwords_sync_logins_across_devices">기기 간에 로그인 동기화</string>
     <!-- Syncing saved logins in Fenix needs reconnect to sync -->
     <string name="preferences_passwords_sync_logins_reconnect">다시 연결</string>
     <!-- Syncing saved logins in Fenix needs login -->
@@ -1571,7 +1605,7 @@
     <!-- Title of warning dialog if users have no device authentication set up -->
     <string name="logins_warning_dialog_title">로그인과 비밀번호 보안</string>
     <!-- Message of warning dialog if users have no device authentication set up -->
-    <string name="logins_warning_dialog_message">다른 사람이 기기를 가지고 있는 경우, 저장된 로그인과 비밀번호에 접근하지 못하도록 기기 잠금 패턴, PIN 또는 비밀번호를 설정하세요.</string>
+    <string name="logins_warning_dialog_message">다른 사람이 내 기기를 가지고 있는 경우, 저장된 로그인과 비밀번호에 접근하지 못하도록 기기 잠금 패턴, PIN 또는 비밀번호를 설정하세요.</string>
     <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
     <string name="logins_warning_dialog_later">나중에</string>
     <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
@@ -1600,6 +1634,8 @@
     <string name="preferences_credit_cards_save_and_autofill_cards_summary">데이터가 암호화됨</string>
     <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
     <string name="preferences_credit_cards_sync_cards_across_devices">기기 간에 카드 동기화</string>
+    <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
+    <string name="preferences_credit_cards_sync_cards">카드 동기화</string>
     <!-- Preference option for adding a credit card -->
     <string name="preferences_credit_cards_add_credit_card">신용 카드 추가</string>
 
@@ -1614,6 +1650,10 @@
     <!-- The header for the expiration date of a credit card -->
     <string name="credit_cards_expiration_date">유효 기간</string>
 
+    <!-- The label for the expiration date month of a credit card to be used by a11y services-->
+    <string name="credit_cards_expiration_date_month">유효 기간 월</string>
+    <!-- The label for the expiration date year of a credit card to be used by a11y services-->
+    <string name="credit_cards_expiration_date_year">유효 기간 년</string>
     <!-- The header for the name on the credit card -->
     <string name="credit_cards_name_on_card">카드상의 이름</string>
     <!-- The header for the nickname for a credit card -->
@@ -1631,6 +1671,27 @@
 
     <!-- Title of the "Saved cards" screen -->
     <string name="credit_cards_saved_cards">저장된 카드</string>
+
+    <!-- Error message for credit card number validation -->
+    <string name="credit_cards_number_validation_error_message">유효한 신용 카드 번호를 입력해 주세요</string>
+
+    <!-- Error message for credit card name on card validation -->
+    <string name="credit_cards_name_on_card_validation_error_message">이 항목을 입력하세요.</string>
+    <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
+    <string name="credit_cards_biometric_prompt_message">저장된 카드를 보려면 잠금 해제</string>
+    <!-- Title of warning dialog if users have no device authentication set up -->
+    <string name="credit_cards_warning_dialog_title">신용 카드 보안</string>
+    <!-- Message of warning dialog if users have no device authentication set up -->
+    <string name="credit_cards_warning_dialog_message">다른 사람이 내 기기를 가지고 있는 경우, 저장된 신용 카드에 접근하지 못하도록 기기 잠금 패턴, PIN 또는 비밀번호를 설정하세요.</string>
+    <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
+    <string name="credit_cards_warning_dialog_set_up_now">지금 설정</string>
+    <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
+    <string name="credit_cards_warning_dialog_later">나중에</string>
+    <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
+    <string name="credit_cards_biometric_prompt_message_pin">기기 잠금 해제</string>
+
+    <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored credit card information -->
+    <string name="credit_cards_biometric_prompt_unlock_message">저장된 신용 카드 정보를 사용하려면 잠금 해제</string>
 
     <!-- Title of the Add search engine screen -->
     <string name="search_engine_add_custom_search_engine_title">검색 엔진 추가</string>
@@ -1803,4 +1864,10 @@
     <!-- Content description radio buttons with a link to more information -->
     <string name="radio_preference_info_content_description">상세 정보</string>
 
-    </resources>
+    <!-- Content description for the action bar "up" button -->
+    <string name="action_bar_up_description">위로 이동</string>
+
+    <!-- Content description for privacy content close button -->
+    <string name="privacy_content_close_button_content_description">닫기</string>
+
+</resources>

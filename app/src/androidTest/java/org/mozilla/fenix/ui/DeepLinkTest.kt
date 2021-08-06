@@ -108,8 +108,7 @@ class DeepLinkTest {
     fun openSettingsLogins() {
         robot.openSettingsLogins {
             verifyDefaultView()
-            verifyDefaultValueSyncLogins()
-            verifyDefaultValueAutofillLogins()
+            verifyDefaultValueAutofillLogins(InstrumentationRegistry.getInstrumentation().targetContext)
         }
     }
 

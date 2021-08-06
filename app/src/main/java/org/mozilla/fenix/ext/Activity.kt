@@ -12,9 +12,12 @@ import android.app.role.RoleManager
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.DrawableRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.HomeActivity
+import org.mozilla.fenix.R
 import org.mozilla.fenix.settings.SupportUtils
 
 /**
@@ -34,11 +37,13 @@ fun Activity.enterToImmersiveMode() {
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     // This will be addressed on https://github.com/mozilla-mobile/fenix/issues/17804
     @Suppress("DEPRECATION")
-    window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+    window.decorView.systemUiVisibility = (
+        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
             or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             or View.SYSTEM_UI_FLAG_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
 }
 
 fun Activity.breadcrumb(
@@ -105,6 +110,20 @@ private fun Activity.navigateToDefaultBrowserAppsSettings() {
             bundleOf(SETTINGS_SELECT_OPTION_KEY to DEFAULT_BROWSER_APP_OPTION)
         )
         startActivity(intent)
+    }
+}
+
+/**
+ * Sets the icon for the back (up) navigation button.
+ * @param icon The resource id of the icon.
+ */
+fun Activity.setNavigationIcon(
+    @DrawableRes icon: Int
+) {
+    (this as? AppCompatActivity)?.supportActionBar?.let {
+        it.setDisplayHomeAsUpEnabled(true)
+        it.setHomeAsUpIndicator(icon)
+        it.setHomeActionContentDescription(R.string.action_bar_up_description)
     }
 }
 

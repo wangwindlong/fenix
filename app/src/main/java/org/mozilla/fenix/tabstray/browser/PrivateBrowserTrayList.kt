@@ -6,14 +6,58 @@ package org.mozilla.fenix.tabstray.browser
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.PACKAGE_PRIVATE
+import mozilla.components.feature.tabs.tabstray.TabsFeature
+import org.mozilla.fenix.ext.components
 
-/**
- * A browser tabs list that displays private tabs.
- */
 class PrivateBrowserTrayList @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : BaseBrowserTrayList(context, attrs, defStyleAttr) {
-    override val configuration: Configuration = Configuration(BrowserTabType.PRIVATE)
+) : AbstractBrowserTrayList(context, attrs, defStyleAttr) {
+
+    override val tabsFeature by lazy {
+        // NB: The use cases here are duplicated because there isn't a nicer
+        // way to share them without a better dependency injection solution.
+        TabsFeature(
+            adapter as TabsAdapter,
+            context.components.core.store,
+            selectTabUseCase,
+            removeTabUseCase,
+            { it.content.private },
+            { }
+        )
+    }
+    private val touchHelper by lazy {
+        TabsTouchHelper(
+            observable = adapter as TabsAdapter,
+            onViewHolderTouched = { swipeToDelete.isSwipeable },
+            onViewHolderDraw = { context.components.settings.gridTabView.not() }
+        )
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+
+        tabsFeature.start()
+        swipeToDelete.start()
+
+        adapter?.onAttachedToRecyclerView(this)
+
+        touchHelper.attachToRecyclerView(this)
+    }
+
+    @VisibleForTesting(otherwise = PACKAGE_PRIVATE)
+    public override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+
+        tabsFeature.stop()
+        swipeToDelete.stop()
+
+        // Notify the adapter that it is released from the view preemptively.
+        adapter?.onDetachedFromRecyclerView(this)
+
+        touchHelper.attachToRecyclerView(null)
+    }
 }
